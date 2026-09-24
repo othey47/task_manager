@@ -1,5 +1,7 @@
 .container {
-    border: 2px solid black;
+    border: 1px solid black;
     padding: 20px;
-    width: 300px;
+
+    width: fit-content;;
+    height: 300px;
 }

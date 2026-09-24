@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <div class="container">
+        <table>
+        <header><h3> 📋 View Tasks </h3></header>
+            <p>
+                {{ message }}
+            </p>
+            <ul>
+                <li>
+                    <b>Title: </b>
+                    {{ tasks.Title }}
+                </li>
+                <li>
+                    <b>Description: </b>
+                    {{ tasks.Description }}
+                </li>
+                <li><b>Priority: </b>
+                    {{ tasks.Priority}}
+                </li>
+            </ul>
+        </table>
+    </div>
+{% endblock %}
