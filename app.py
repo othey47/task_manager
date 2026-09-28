@@ -36,6 +36,26 @@ def add_tasks():
 
     return render_template('add.html')
 
+@app.route('/edit_tasks', methods=['GET','POST'])
+def edit_tasks():
+    if request.method == 'POST':
+        new_title = request.form.get('title')
+        new_description = request.form.get('description')
+        new_priority = request.form.get('priority')
+
+        if new_title:
+            tasks['title'] = new_title
+        
+        if new_description:
+            tasks['description'] = new_description
+
+        if new_priority:
+            tasks['priority'] = new_priority
+
+
+        return redirect("/view_tasks")
+    
+    return render_template('edit.html')
 
 
 if __name__ == '__main__':
