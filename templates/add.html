@@ -2,7 +2,8 @@
 {% block body %}
     <div class="container">
     <header><h3>➕ Add Task</h3></header>
-    <form action="add_tasks" method="POST">
+    <form action="{{url_for('add_tasks')}}" method="POST">
+
         <label for="Title">Title</label><br>
         <input autocomplete="off" autofocus type="text" name="title" placeholder="Title"><br>
         
@@ -10,9 +11,12 @@
         <textarea autocomplete="off" type="text" name="description" placeholder="Description"></textarea><br>
 
         <label for="Priority">Priority</label><br>
-        <input autocomplete="off" autofocus type="text" name="priority" placeholder="Priority"><br>
-
-        <button type="sumbit">Add task</button>
+        {% for priority in priorities %}
+            <input type="radio" name="priority" value="{{ priority }}">
+            {{ priority }}
+        {% endfor %}
+            <br>
+        <button type="submit">Add task</button>
     </form>
     </div>
 {% endblock %}
