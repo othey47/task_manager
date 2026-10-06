@@ -2,20 +2,33 @@
 
 {% block body %}
     <div class="container">
-        <table>
         <header><h3> 📋 View Tasks </h3></header>
-            <p>{{ message }}</p>
+
             <ul>
+                {% for task in tasks%}
                 <li>
-                    <b>Title: </b>{{ tasks.title }}</li>
-                <li>
-                    <b>Description: </b>{{ tasks.description }}
+                    <b>Title: </b>{{ task.title }}<br>
+                    <b>Description: </b>{{ task.description }}<br>
+                    <b>Priority: </b>{{ task.priority }}
+                    
+                    <br>
+
+                    <a  href="{{ url_for('edit_tasks', id=task.id) }}">Edit Tasks</a>
+                
+                    <form action="{{url_for('delete_tasks') }}" method="POST">
+                        <input type="hidden" name="id" value="{{ task.id }}">
+                    
+                        <button class='delete-btn' type="submit">Delete task</button>
+                    </form>
+
+                    <form action="{{ url_for('status') }}" method="POST">
+                        <input type="hidden" name="id" value="{{ task.id }}">
+                        <button class="check-btn" type="submit">{{ task.status }}</button>
+                    </form>
+
                 </li>
-                <li>
-                    <b>Priority: </b>{{ tasks.priority }}
-                </li>
+
+                {% endfor %}
             </ul>
-        </table>
-        <a href="{{ url_for('edit_tasks') }}">Edit Tasks</a>
     </div>
 {% endblock %}

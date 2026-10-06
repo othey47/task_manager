@@ -3,18 +3,20 @@
 {% block body %}
     <div class="container">
         <header><h3>✏️ Edit Task</h3></header>
-        <form action="edit_tasks" method="POST">
-            <label for="Title">Title</label><br>
-            <input autocomplete="off" autofocus type="text" name="title" placeholder="Title"><br>
+            <form action="{{url_for('edit_tasks', id=task.id)}}" method="POST">
+
+                <label for="Title">Title</label><br>
+                <input autocomplete="off" autofocus type="text" name="title" placeholder="Title"><br>
         
-            <label for="Description">Description</label><br>
-            <textarea autocomplete="off" autofocus type="text" name="description" placeholder="Description"></textarea><br>
-
-            <label for="Priority">Priority</label><br>
-            <input autocomplete="off" autofocus type="text" name="priority" placeholder="Priority"><br>
-
-            <button type="submit">Edit task</button>
-        </form>
-
+                <label for="Description">Description</label><br>
+                <textarea autocomplete="off" autofocus type="text" name="description" placeholder="Description"></textarea><br>
+                <label for="Priority">Priority</label><br>
+                    {% for priority in priorities %}
+                        <input type="radio" name="priority" value="{{ priority }}">
+                        {{ priority }}
+                    {% endfor %}
+                    <br>
+                <button type="submit">Edit task</button>
+            </form>
     </div>
 {% endblock %}
