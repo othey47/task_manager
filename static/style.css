@@ -6,3 +6,7 @@
     height: 300px;
 }
 
+.container .error {
+    color:red;
+    font-size: 10px;
+}
