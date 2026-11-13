@@ -1,8 +1,12 @@
 # Import the tools we need from Flask
+import database
 from flask import Flask, render_template, redirect, url_for, request, abort
 
 # Create the Flask application
 app = Flask(__name__)
+
+# Database :
+database.init_db()
 
 # Create an empty list to store tasks
 tasks = []
@@ -165,18 +169,16 @@ def add_tasks():
                 selected_priority=priority
             )
 
-        # All validation checks passed, so generate a new task ID
-        id = get_id(tasks)        
+        # Database implementation
+        connect = database.get_db_connection()
 
-        # Create a new task dictionary and add it to the tasks list
-        # Every new task starts with the status "pending"
-        tasks.append({
-            "id" : id,
-            "title" : title,
-            "description" : description,
-            "priority" : priority,
-            "status" : "pending"
-        })
+        connect.execute(
+            "INSERT INTO tasks(title, description, priority) VALUES(?,?,?)",
+                (title, description, priority)
+            )
+
+        connect.commit()
+        connect.close()
 
         # Redirect the user to the page displaying all tasks
         return redirect(url_for('view_tasks'))    
