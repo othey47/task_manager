@@ -5,8 +5,9 @@ from flask import Flask, render_template, redirect, url_for, request, abort
 # Create the Flask application
 app = Flask(__name__)
 
-# Database :
+# Database Initialization::
 database.init_db()
+
 
 # Create an empty list to store tasks
 tasks = []
@@ -14,11 +15,6 @@ tasks = []
 # Define the available priority levels for tasks
 priorities = ['Low', 'Medium', 'High']
 
-# Generate an ID for a new task
-def get_id(tasks):
-    # Return the number of tasks plus 1
-    # Example: if there are 3 tasks, the new ID will be 4
-    return int(len(tasks)+1)
 
 def count_status(tasks):
 
@@ -102,13 +98,22 @@ def main():
         completed=completed
     )
 
-# Define the route for displaying all tasks
+# Define the route for displaying all tasks.
 @app.route('/view_tasks')
 def view_tasks():
-    
-    # Render view.html and pass the tasks list to the template
-    # The template can use Jinja to loop through and display each task
+
+    # Open a connection to the SQLite database.
+    connect = database.get_db_connection()
+
+    # Retrieve all tasks from the tasks table.
+    tasks = connect.execute("SELECT * FROM tasks").fetchall()
+
+    # Close the database connection.
+    connect.close()
+
+    # Pass the retrieved tasks to the HTML template.
     return render_template("view.html", tasks=tasks)
+
 
 # Define the route for adding a new task.
 # Allow both GET (display the form) and POST (submit the form) requests.
@@ -169,15 +174,19 @@ def add_tasks():
                 selected_priority=priority
             )
 
-        # Database implementation
+        # Open a connection to the SQLite database.
         connect = database.get_db_connection()
 
+        # Insert a new task into the tasks table.
+        # The ? placeholders are replaced by the values in the tuple.
         connect.execute(
             "INSERT INTO tasks(title, description, priority) VALUES(?,?,?)",
-                (title, description, priority)
-            )
+            (title, description, priority)
+        )
 
+        # Save the changes to the database.
         connect.commit()
+        # Close the database connection.
         connect.close()
 
         # Redirect the user to the page displaying all tasks
@@ -192,104 +201,112 @@ def add_tasks():
 @app.route('/edit_tasks', methods=['GET', 'POST'])
 def edit_tasks():
 
+    # Open a connection to the SQLite database.
+    connect = database.get_db_connection()
+    
     # Get the task ID from the URL query parameter
     id = int(request.args.get('id'))
 
-    # Print debugging information to help inspect the request and task list
-    print("ID:", id)
-    print("TASKS:", tasks)
+    # Retrieve the task matching the ID.
+    task = connect.execute(" SELECT * FROM tasks WHERE id = ? ", (id,)).fetchone()    
+
+    # Check whether the task exists.
+    if task is None:
+        connect.close()
+        return "Task not found", 404
 
     # Check whether the user submitted the edit form
     if request.method == 'POST':
+                
+        # Get the submitted values from the form
+                
+        new_title = request.form.get('title', '').strip()
+        new_description = request.form.get('description', '').strip()
+        new_priority = request.form.get('priority')
 
-        # Find the task that matches the ID from the URL
-        for task in tasks:
-            if task['id'] == id:
+        # 1. Validate the title:
+        if new_title:
+            result, message = valid_title(new_title)
 
-                # Get the submitted values from the form
-                # strip() removes whitespace around the title and description
-                new_title = request.form.get('title', '').strip()
-                new_description = request.form.get('description', '').strip()
-                new_priority = request.form.get('priority')
+            # If validation fails, return the edit form with an error
+            # and preserve the user's submitted values
+            if not result:
+                connect.close()
+                return render_template(
+                    'edit.html',
+                    task=task,
+                    id=id,                        priorities=priorities,
+                    error=message,
+                    new_title=new_title,
+                    new_description=new_description,
+                    selected_priority=new_priority
+                )
 
-                # 1. Validate the title only if a new title was submitted
-                # An empty title means the existing title should remain unchanged
-                if new_title:
-                    result, message = valid_title(new_title)
+        # 2. Validate the description only if a new description was submitted
+        # An empty description means the existing description stays unchanged
+        if new_description:
+            result, message = valid_description(new_description)
 
-                    # If validation fails, return the edit form with an error
-                    # and preserve the user's submitted values
-                    if not result:
-                        return render_template(
-                            'edit.html',
-                            task=task,
-                            id=id,
-                            priorities=priorities,
-                            error=message,
-                            new_title=new_title,
-                            new_description=new_description,
-                            selected_priority=new_priority
-                        )
+            # If validation fails, return the edit form with an error
+            if not result:
+                connect.close()
+                return render_template(
+                    'edit.html',
+                    task=task,
+                    id=id,
+                    priorities=priorities,
+                    error=message,
+                    new_title=new_title,
+                    new_description=new_description,
+                    selected_priority=new_priority
+                )
 
-                # 2. Validate the description only if a new description was submitted
-                # An empty description means the existing description stays unchanged
-                if new_description:
-                    result, message = valid_description(new_description)
+        # 3. Validate the priority only if a new priority was selected
+        # If no priority was selected, keep the existing priority
+        if new_priority:
+            result, message = valid_priority(new_priority)
 
-                    # If validation fails, return the edit form with an error
-                    if not result:
-                        return render_template(
-                            'edit.html',
-                            task=task,
-                            id=id,
-                            priorities=priorities,
-                            error=message,
-                            new_title=new_title,
-                            new_description=new_description,
-                            selected_priority=new_priority
-                        )
+            # If validation fails, return the edit form with an error
+            if not result:
+                connect.close()
+                return render_template(
+                    'edit.html',
+                    task=task,
+                    id=id,
+                    priorities=priorities,
+                    error=message,
+                    new_title=new_title,
+                    new_description=new_description,
+                    selected_priority=new_priority
+                )
 
-                # 3. Validate the priority only if a new priority was selected
-                # If no priority was selected, keep the existing priority
-                if new_priority:
-                    result, message = valid_priority(new_priority)
+        title = new_title if new_title else task['title']
+        description = new_description if new_description else task['description']
+        prioritiy = new_priority if new_priority else task['priority']
 
-                    # If validation fails, return the edit form with an error
-                    if not result:
-                        return render_template(
-                            'edit.html',
-                            task=task,
-                            id=id,
-                            priorities=priorities,
-                            error=message,
-                            new_title=new_title,
-                            new_description=new_description,
-                            selected_priority=new_priority
-                        )
-
-                # All submitted values passed validation.
-                # Update only the fields that contain new values.
-                if new_title:
-                    task['title'] = new_title
-
-                if new_description:
-                    task['description'] = new_description
-
-                if new_priority:
-                    task['priority'] = new_priority
-
+        # Update the task in the database:
+        connect.execute("""
+            UPDATE tasks
+            SET title=?, description=?, priority=?
+            WHERE id=?
+        """, (title, description, prioritiy, id))
+        # Save the changes:
+        connect.commit()
+        # Close the database connection:
+        connect.close()
+        
         # After processing the edit, redirect to the task list
         return redirect(url_for("view_tasks"))
+    # For a GET request, display the edit form.
+    connect.close()
 
     # For a GET request, find the task and display the edit form
-    for task in tasks:
-        if task['id'] == id:
-            return render_template(
-                'edit.html',
-                id=id,
-                task=task,
-                priorities=priorities
-            )
+    return render_template(
+        'edit.html',
+        id=id,
+        task=task,
+        priorities=priorities
+    )
 
 
 @app.route('/delete_tasks', methods=['POST'])
